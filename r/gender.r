@@ -328,15 +328,26 @@ male_df$birth_year[which(male_df$birth_year == Inf)] <- NA
 male_df$death_year[which(male_df$death_year == -Inf)] <- NA
 
 #create column for number of uses of a name for each gender
-gender_name_dict$count <- NA
-unique_names <- unique(gender_name_dict$forename)
+male_df$count <- NA
+unique_names <- unique(male_df$forename)
 for (i in 1:length(unique_names)) {
   cat("\rChecking for number of instances of : ", unique_names[i], "                                            ")
-  str_count(unique_names[i], gender_name_dict$forename)
-
+  male_df$count[which(male_df$forename == unique_names[i])] <- sum(male_df$forename == unique_names[i])
 }
 
+female_df$count <- NA
+unique_names <- unique(female_df$forename)
+for (i in 1:length(unique_names)) {
+  cat("\rChecking for number of instances of : ", unique_names[i], "                                            ")
+  female_df$count[which(female_df$forename == unique_names[i])] <- sum(female_df$forename == unique_names[i])
+}
+
+female_df <- unique(female_df)
+male_df <- unique(male_df)
+
 #combine datasets again
+
+finished_data <- rbind(female_df, male_df)
 
 #save CSV
 
