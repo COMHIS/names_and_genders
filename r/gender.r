@@ -63,7 +63,7 @@ death_year <- NA
 temp_new_df <- data.frame(forename, gender = "M", birth_year, death_year, stringsAsFactors = FALSE)
 gender_name_dict <- rbind(gender_name_dict, temp_new_df)
 
-#fathers
+#husbands
 list <- which(temp$husbands_Forename != "")
 forename <- temp$husbands_Forename[list]
 birth_year <- as.numeric(str_extract(temp$husbands_BirthDate[list], "\\d\\d\\d\\d"))
@@ -94,7 +94,7 @@ death_year <- NA
 temp_new_df <- data.frame(forename, gender = "F", birth_year, death_year, stringsAsFactors = FALSE)
 gender_name_dict <- rbind(gender_name_dict, temp_new_df)
 
-#mothers
+#wives
 list <- which(temp$wives_Forename != "")
 forename <- temp$wives_Forename[list]
 birth_year <- as.numeric(str_extract(temp$wives_BirthDate[list], "\\d\\d\\d\\d"))
@@ -221,8 +221,22 @@ gender_name_dict <- rbind(gender_name_dict, temp_new_df)
 
 #clean up entries with missing/broken names or gender
 
+#standardize name case
+gender_name_dict$forename <- tolower(gender_name_dict$forename)
+
 list <- grep("^-.*$", gender_name_dict$forename)
 gender_name_dict <- gender_name_dict[-c(list),]
+
+list <- grep("^@ymond$", gender_name_dict$forename)
+gender_name_dict <- gender_name_dict[-c(list),]
+list <- grep("^a son$", gender_name_dict$forename)
+gender_name_dict <- gender_name_dict[-c(list),]
+list <- grep("^a doughter$", gender_name_dict$forename)
+gender_name_dict <- gender_name_dict[-c(list),]
+list <- grep("^,ucy$", gender_name_dict$forename)
+gender_name_dict <- gender_name_dict[-c(list),]
+
+
 
 list <- grep("^[[].*[]]$", gender_name_dict$forename)
 gender_name_dict <- gender_name_dict[-c(list),]
@@ -281,27 +295,49 @@ for (i in 1:length(to_correct)) {
   gender_name_dict$gender[list] <- "F"
 }
 
-#add years for when the specirc names were active
 
-unique_names <- unique(gender_name_dict$forename)
+#split by gender to do the rest of the anlysis
+
+female_df <- subset(gender_name_dict, gender == "F")
+male_df <- subset(gender_name_dict, gender == "M")
+
+
+#add years for when the specirc names were active
+unique_names <- unique(female_df$forename)
 for (i in 1:length(unique_names)) {
   cat("\rAssigned active birth/death years for: ", unique_names[i], "                                            ")
-  gender_name_dict$birth_year[which(gender_name_dict$forename == unique_names[i])] <- 
-    min(gender_name_dict$birth_year[which(gender_name_dict$forename == unique_names[i])], na.rm = TRUE)
-  gender_name_dict$death_year[which(gender_name_dict$forename == unique_names[i])] <- 
-    max(gender_name_dict$death_year[which(gender_name_dict$forename == unique_names[i])], na.rm = TRUE)
+  female_df$birth_year[which(female_df$forename == unique_names[i])] <- 
+    min(female_df$birth_year[which(female_df$forename == unique_names[i])], na.rm = TRUE)
+  female_df$death_year[which(female_df$forename == unique_names[i])] <- 
+    max(female_df$death_year[which(female_df$forename == unique_names[i])], na.rm = TRUE)
 }
 
-#create column for number of uses of a name
+female_df$birth_year[which(female_df$birth_year == Inf)] <- NA
+female_df$death_year[which(female_df$death_year == -Inf)] <- NA
+
+unique_names <- unique(male_df$forename)
+for (i in 1:length(unique_names)) {
+  cat("\rAssigned active birth/death years for: ", unique_names[i], "                                            ")
+  male_df$birth_year[which(male_df$forename == unique_names[i])] <- 
+    min(male_df$birth_year[which(male_df$forename == unique_names[i])], na.rm = TRUE)
+  male_df$death_year[which(male_df$forename == unique_names[i])] <- 
+    max(male_df$death_year[which(male_df$forename == unique_names[i])], na.rm = TRUE)
+}
+
+male_df$birth_year[which(male_df$birth_year == Inf)] <- NA
+male_df$death_year[which(male_df$death_year == -Inf)] <- NA
+
+#create column for number of uses of a name for each gender
 gender_name_dict$count <- NA
 unique_names <- unique(gender_name_dict$forename)
 for (i in 1:length(unique_names)) {
   cat("\rChecking for number of instances of : ", unique_names[i], "                                            ")
   str_count(unique_names[i], gender_name_dict$forename)
-  
-  gender_name_dict$birth_year[which(gender_name_dict$forename == unique_names[i])] <- 
-    min(gender_name_dict$birth_year[which(gender_name_dict$forename == unique_names[i])], na.rm = TRUE)
-  gender_name_dict$death_year[which(gender_name_dict$forename == unique_names[i])] <- 
-    max(gender_name_dict$death_year[which(gender_name_dict$forename == unique_names[i])], na.rm = TRUE)
+
 }
 
+#combine datasets again
+
+#save CSV
+
+write.csv(gender_name_dict, file = "historical_forenames_genders.csv", row.names = FALSE)
