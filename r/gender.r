@@ -9,7 +9,7 @@ library(stringr)
 # http://sas-space.sas.ac.uk/750/
 # http://sas-space.sas.ac.uk/751/ 
 
-setwd("Dropbox/github/names_and_genders/")
+setwd("/home/mark/Dropbox/github/names_and_genders/")
 
 #pulldata from sources
 
@@ -349,6 +349,22 @@ male_df <- unique(male_df)
 
 finished_data <- rbind(female_df, male_df)
 
+#correct instances where names are assigned to both, but this appears to be a dataentry error
+#first run - if less than one percent as one gender, choose other
+
+dupes <- finished_data$forename[which(duplicated(finished_data$forename))]
+for (i in 1:length(dupes)) {
+  cat(dupes[i], finished_data$count[which(finished_data$forename == dupes[i])], "\n")
+  temp_min <- min(finished_data$count[which(finished_data$forename == dupes[i])])
+  temp_max <- max(finished_data$count[which(finished_data$forename == dupes[i])])
+  if ((temp_min / temp_max) < 0.05) {
+    finished_data <- finished_data[-intersect(which(finished_data$forename == dupes[i]), which(finished_data$count == temp_min)), ]
+  }
+}
+
 #save CSV
 
-write.csv(gender_name_dict, file = "historical_forenames_genders.csv", row.names = FALSE)
+write.csv(finished_data, file = "historical_forenames_genders.csv", row.names = FALSE)
+
+
+
